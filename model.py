@@ -356,3 +356,51 @@ def solve_chol(A, b):
 
     return x
 
+# Step 7 - mvn_sample
+def mvn_sample(mu, Sigma, n, rng):
+    """
+    Draw samples from a multivariate normal distribution
+    using Cholesky factorization.
+
+    Parameters:
+        mu    : Mean vector of shape (d,).
+        Sigma : Covariance matrix of shape (d, d).
+        n     : Number of samples to generate.
+        rng   : NumPy random Generator.
+
+    Returns:
+        samples : Array of shape (n, d), with one sample per row.
+
+    Raises:
+        ValueError: If the dimensions of mu and Sigma do not match
+                    or Sigma is not positive definite.
+    """
+    # Convert the mean vector to a floating-point array.
+    mu = np.asarray(mu, dtype=float)
+
+    # Validate the mean vector.
+    if mu.ndim != 1:
+        raise ValueError("mu must be a one-dimensional vector.")
+
+    d = mu.shape[0]
+
+    # Validate the covariance matrix dimensions.
+    Sigma = np.asarray(Sigma, dtype=float)
+
+    if Sigma.shape != (d, d):
+        raise ValueError("Sigma must have shape (d, d), matching mu.")
+
+    # Compute the Cholesky factorization: Sigma = L @ L.T.
+    # This also raises ValueError if Sigma is not positive definite.
+    L = cholesky_factor(Sigma)
+
+    # Generate n independent standard normal samples.
+    # Each row represents one sample in d dimensions.
+    Z = rng.standard_normal(size=(n, d))
+
+    # Transform the standard normal samples to the
+    # required multivariate normal distribution.
+    samples = Z @ L.T + mu
+
+    return samples
+

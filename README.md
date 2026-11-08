@@ -16,6 +16,7 @@ python scaffold.py
 - [x] **4.** solve_lu
 - [x] **5.** cholesky_factor
 - [x] **6.** logdet_chol
+- [x] **7.** mvn_sample
 
 ---
 
