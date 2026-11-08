@@ -1151,3 +1151,48 @@ def svd_jacobi(A, tol=1e-14, max_sweeps=40):
 
     return U, singular_values, Vt
 
+# Step 17 - pinv_svd
+def pinv_svd(A, rcond=1e-12):
+    """
+    Compute the Moore-Penrose pseudo-inverse using
+    the One-Sided Jacobi SVD.
+
+    Parameters:
+        A     : Input matrix of shape (m, n).
+        rcond : Relative cutoff for determining which singular
+                values should be inverted.
+
+    Returns:
+        A_pinv : Pseudo-inverse of shape (n, m).
+
+    Notes:
+        Only singular values greater than rcond * s[0]
+        are inverted. The remaining singular values are
+        treated as zero.
+    """
+    # Convert A to a floating-point array without modifying the original.
+    A = np.asarray(A, dtype=float)
+
+    # Compute the thin SVD using the previously implemented
+    # One-Sided Jacobi algorithm.
+    U, s, Vt = svd_jacobi(A)
+
+    # Determine the numerical threshold.
+    threshold = rcond * s[0]
+
+    # Initialize the reciprocal singular values with zeros.
+    s_inv = np.zeros_like(s, dtype=float)
+
+    # Invert only singular values strictly above the threshold.
+    nonzero_mask = s > threshold
+    s_inv[nonzero_mask] = 1.0 / s[nonzero_mask]
+
+    # Construct the Moore-Penrose pseudo-inverse:
+    # A+ = V @ Sigma+ @ U.T
+    #
+    # Vt.T has shape (n, r).
+    # Multiplying its columns by s_inv applies Sigma+.
+    A_pinv = (Vt.T * s_inv) @ U.T
+
+    return A_pinv
+

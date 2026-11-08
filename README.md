@@ -26,6 +26,7 @@ python scaffold.py
 - [x] **14.** orthogonal_iteration
 - [x] **15.** svd_via_eig
 - [x] **16.** svd_jacobi
+- [x] **17.** pinv_svd
 
 ---
 
