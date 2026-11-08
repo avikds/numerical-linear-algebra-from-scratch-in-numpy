@@ -38,6 +38,7 @@ python scaffold.py
 - [x] **26.** rank_one_update
 - [x] **27.** whitening_matrices
 - [x] **28.** least_norm
+- [x] **29.** ridge_dual
 
 ---
 

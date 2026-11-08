@@ -1987,3 +1987,60 @@ def least_norm(A, b):
 
     return x
 
+# Step 29 - ridge_dual
+def ridge_dual(X, Y, lam):
+    """
+    Compute ridge regression weights using the dual formulation.
+
+    The solution is:
+        w = X.T @ (X @ X.T + lam * I)^(-1) @ Y
+
+    Parameters:
+        X   : Data matrix of shape (N, D).
+        Y   : Target vector of shape (N,) or matrix of shape (N, k).
+        lam : Positive regularization parameter.
+
+    Returns:
+        w : Ridge regression weights of shape (D,)
+            or (D, k).
+
+    Notes:
+        - Uses solve_chol() to solve the N x N system.
+        - Never constructs the D x D matrix X.T @ X.
+        - Does not explicitly calculate a matrix inverse.
+        - Does not modify the original inputs.
+    """
+    # Convert inputs to floating-point arrays without modifying
+    # the original inputs.
+    X = np.asarray(X, dtype=float)
+    Y = np.asarray(Y, dtype=float)
+
+    # Validate the dimensions of X.
+    if X.ndim != 2:
+        raise ValueError("X must be a two-dimensional matrix.")
+
+    N, D = X.shape
+
+    # Validate the dimensions of Y.
+    if Y.ndim not in (1, 2) or Y.shape[0] != N:
+        raise ValueError("Y must have shape (N,) or (N, k).")
+
+    # Validate the regularization parameter.
+    if not np.isscalar(lam) or not np.isfinite(lam) or lam <= 0:
+        raise ValueError("lam must be a positive finite scalar.")
+
+    # Construct the N x N system:
+    # XX.T + lam * I
+    # This avoids constructing the much larger D x D matrix X.T @ X.
+    system = X @ X.T + lam * np.eye(N, dtype=float)
+
+    # Solve the N x N symmetric positive definite system.
+    # system @ alpha = Y
+    alpha = solve_chol(system, Y)
+
+    # Calculate the ridge regression weights:
+    # w = X.T @ alpha
+    w = X.T @ alpha
+
+    return w
+
