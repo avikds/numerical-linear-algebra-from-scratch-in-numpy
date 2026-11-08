@@ -1715,3 +1715,79 @@ def partitioned_inverse(M, k):
 
     return M_inv, S
 
+# Step 25 - woodbury_solve
+def woodbury_solve(sigma_diag, X, b):
+    """
+    Solve (Sigma + X @ X.T) @ x = b using the Woodbury identity.
+
+    Parameters:
+        sigma_diag : Positive diagonal entries of Sigma,
+                     shape (N,).
+        X          : Low-rank matrix of shape (N, D).
+        b          : Right-hand side vector of shape (N,)
+                     or matrix of shape (N, k).
+
+    Returns:
+        x : Solution with the same shape as b.
+
+    Notes:
+        - Only a D x D linear system is solved.
+        - Never constructs an N x N matrix.
+        - Uses solve_chol() for the smaller system.
+        - Does not modify the original inputs.
+    """
+    # Convert inputs to floating-point arrays without modifying
+    # the original inputs.
+    sigma_diag = np.asarray(sigma_diag, dtype=float)
+    X = np.asarray(X, dtype=float)
+    b = np.asarray(b, dtype=float)
+
+    # Validate sigma_diag.
+    if sigma_diag.ndim != 1:
+        raise ValueError("sigma_diag must be a one-dimensional array.")
+
+    N = sigma_diag.shape[0]
+
+    # Validate the low-rank matrix X.
+    if X.ndim != 2 or X.shape[0] != N:
+        raise ValueError("X must have shape (N, D).")
+
+    # Validate the right-hand side.
+    if b.ndim not in (1, 2) or b.shape[0] != N:
+        raise ValueError("b must have shape (N,) or (N, k).")
+
+    # The diagonal entries of Sigma must be strictly positive.
+    if np.any(sigma_diag <= 0.0):
+        raise ValueError("All diagonal entries of Sigma must be positive.")
+
+    D = X.shape[1]
+
+    # Calculate Sigma^(-1) @ b using element-wise division.
+    if b.ndim == 1:
+        sigma_inv_b = b / sigma_diag
+    else:
+        sigma_inv_b = b / sigma_diag[:, None]
+
+    # Calculate Sigma^(-1) @ X without constructing Sigma.
+    sigma_inv_X = X / sigma_diag[:, None]
+
+    # Construct the smaller D x D Woodbury system:
+    # I + X.T @ Sigma^(-1) @ X.
+    small_matrix = (
+        np.eye(D, dtype=float)
+        + X.T @ sigma_inv_X
+    )
+
+    # Calculate the right-hand side of the smaller system.
+    small_rhs = X.T @ sigma_inv_b
+
+    # Solve the D x D symmetric positive definite system:
+    # (I + X.T @ Sigma^(-1) @ X) @ z = X.T @ Sigma^(-1) @ b
+    z = solve_chol(small_matrix, small_rhs)
+
+    # Apply the Woodbury correction:
+    # x = Sigma^(-1) @ b - Sigma^(-1) @ X @ z
+    x = sigma_inv_b - sigma_inv_X @ z
+
+    return x
+

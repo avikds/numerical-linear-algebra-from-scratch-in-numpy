@@ -34,6 +34,7 @@ python scaffold.py
 - [x] **22.** truncation_error
 - [x] **23.** spectrum_vs_shuffled
 - [x] **24.** partitioned_inverse
+- [x] **25.** woodbury_solve
 
 ---
 
