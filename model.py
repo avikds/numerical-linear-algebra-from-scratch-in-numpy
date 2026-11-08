@@ -766,3 +766,60 @@ def power_method(A, v0, n_iter):
 
     return lam, u
 
+# Step 13 - top_k_deflation
+def top_k_deflation(A, k, n_iter, seed=0):
+    """
+    Find the top k eigenpairs of a real symmetric matrix
+    using the Power Method and matrix deflation.
+
+    Parameters:
+        A      : Real symmetric matrix of shape (n, n).
+        k      : Number of eigenpairs to compute.
+        n_iter : Number of power iterations for each eigenpair.
+        seed   : Random seed for reproducibility (default=0).
+
+    Returns:
+        vals : Array of shape (k,) containing the eigenvalues
+               in the order they are found.
+        vecs : Array of shape (n, k) containing the corresponding
+               normalized eigenvectors as columns.
+    """
+    # Create a floating-point copy to preserve the original matrix.
+    A_work = np.array(A, dtype=float, copy=True)
+
+    # Validate that A is a square matrix.
+    if A_work.ndim != 2 or A_work.shape[0] != A_work.shape[1]:
+        raise ValueError("A must be a square matrix.")
+
+    n = A_work.shape[0]
+
+    # Validate k.
+    if not isinstance(k, (int, np.integer)) or not 0 <= k <= n:
+        raise ValueError("k must be an integer between 0 and n.")
+
+    # Create a random number generator.
+    rng = np.random.default_rng(seed)
+
+    # Initialize storage for eigenvalues and eigenvectors.
+    vals = np.zeros(k, dtype=float)
+    vecs = np.zeros((n, k), dtype=float)
+
+    # Find eigenpairs one at a time using deflation.
+    for j in range(k):
+
+        # Generate a fresh random initial vector.
+        v0 = rng.standard_normal(n)
+
+        # Find the dominant eigenpair of the current working matrix.
+        lam, u = power_method(A_work, v0, n_iter)
+
+        # Store the eigenvalue and eigenvector.
+        vals[j] = lam
+        vecs[:, j] = u
+
+        # Deflate the working matrix by removing the contribution
+        # of the eigenpair just computed.
+        A_work -= lam * np.outer(u, u)
+
+    return vals, vecs
+

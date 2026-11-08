@@ -22,6 +22,7 @@ python scaffold.py
 - [x] **10.** lstsq_normal
 - [x] **11.** lstsq_qr
 - [x] **12.** power_method
+- [x] **13.** top_k_deflation
 
 ---
 
