@@ -1414,3 +1414,80 @@ def least_squares_study(degrees, n_points=50):
 
     return results
 
+# Step 21 - truncated_svd
+def book_image():
+    """
+    Load the book's grayscale image.
+
+    Returns:
+        A 200 x 320 grayscale image with pixel values in [0, 1].
+    """
+    # Import the newly required scikit-learn image loader.
+    from sklearn.datasets import load_sample_image
+
+    # Load the bundled China image and convert it to grayscale.
+    im = load_sample_image("china.jpg").astype(float).mean(axis=2) / 255.0
+
+    # Ensure even dimensions for 2 x 2 downsampling.
+    H, W = im.shape[0] // 2 * 2, im.shape[1] // 2 * 2
+
+    # Downsample by averaging each 2 x 2 pixel block.
+    small = 0.25 * (
+        im[:H:2, :W:2]
+        + im[1:H:2, :W:2]
+        + im[:H:2, 1:W:2]
+        + im[1:H:2, 1:W:2]
+    )
+
+    # Return the required 200 x 320 grayscale image.
+    return small[:200, :320]
+
+
+def truncated_svd(A, K):
+    """
+    Compute the best rank-K approximation of a matrix
+    using Singular Value Decomposition.
+
+    Parameters:
+        A : Input matrix of shape (N, D).
+        K : Number of singular values to retain.
+
+    Returns:
+        A_hat   : Rank-K approximation with the same shape as A.
+        n_params: Number of parameters required to store
+                  the truncated SVD, as a Python integer.
+
+    The approximation is:
+        A_hat = (U[:, :K] * s[:K]) @ Vt[:K, :]
+    """
+    # Convert A to a floating-point array without modifying
+    # the original matrix.
+    A = np.asarray(A, dtype=float)
+
+    # Validate the input matrix.
+    if A.ndim != 2:
+        raise ValueError("A must be a two-dimensional matrix.")
+
+    N, D = A.shape
+
+    # Validate K.
+    if not isinstance(K, (int, np.integer)) or not 0 <= K <= min(N, D):
+        raise ValueError("K must be between 0 and min(N, D).")
+
+    # Compute the thin SVD using the One-Sided Jacobi algorithm.
+    U, s, Vt = svd_jacobi(A)
+
+    # Retain only the first K singular triplets.
+    U_k = U[:, :K]
+    s_k = s[:K]
+    Vt_k = Vt[:K, :]
+
+    # Reconstruct the best rank-K approximation.
+    A_hat = (U_k * s_k) @ Vt_k
+
+    # Count the parameters needed to store the truncated SVD.
+    # U_k: N*K, singular values: K, Vt_k: K*D.
+    n_params = int(K * (N + D + 1))
+
+    return A_hat, n_params
+
