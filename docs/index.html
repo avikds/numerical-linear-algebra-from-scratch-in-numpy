@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Numerical Linear Algebra from Scratch in NumPy — Built on Deep-ML</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #09090b;
+      --surface: #18181b;
+      --surface-alt: #27272a;
+      --border: #27272a;
+      --text: #fafafa;
+      --text-muted: #a1a1a6;
+      --accent: #fafafa;
+    }
+  }
+  :root {
+    --bg: #ffffff;
+    --surface: #fafafa;
+    --surface-alt: #f4f4f5;
+    --border: #e4e4e7;
+    --text: #18181b;
+    --text-muted: #71717a;
+    --accent: #18181b;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
+  }
+
+  .theme-toggle {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 100;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+  .theme-toggle:hover {
+    border-color: var(--text);
+  }
+  .theme-toggle svg {
+    width: 20px;
+    height: 20px;
+    stroke: var(--text);
+    fill: none;
+    stroke-width: 2;
+  }
+
+  .hero {
+    position: relative;
+    min-height: 600px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface-alt) 100%);
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" /></filter><rect width="100" height="100" filter="url(%23noise)" opacity="0.05"/></svg>');
+    opacity: 0.3;
+    animation: drift 20s ease-in-out infinite;
+  }
+  @keyframes drift {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(10px, -10px); }
+  }
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    animation: fadeInUp 0.8s ease-out;
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .hero h1 {
+    font-family: var(--mono);
+    font-size: 48px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  .wrap { max-width: 900px; margin: 0 auto; padding: 96px 24px; }
+
+  .section {
+    scroll-margin-top: 100px;
+    animation: fadeIn 0.6s ease-out;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .section-title {
+    font-family: var(--mono);
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0 0 32px;
+    font-weight: 600;
+  }
+  .input-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    margin-bottom: 64px;
+  }
+  .output-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    margin-bottom: 96px;
+    min-height: 100px;
+  }
+
+  .how-section { margin-bottom: 96px; }
+  .part-reveal {
+    margin-bottom: 48px;
+    animation: slideInLeft 0.6s ease-out;
+  }
+  @keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .part-title {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 16px;
+    color: var(--text);
+  }
+  .part-description {
+    color: var(--text-muted);
+    margin-bottom: 24px;
+    line-height: 1.7;
+  }
+  .diagram-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 250px;
+  }
+  .diagram-container svg {
+    max-width: 100%;
+    height: auto;
+    color: var(--text);
+  }
+
+  .footer {
+    text-align: center;
+    padding-top: 48px;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+  .footer a {
+    color: var(--text);
+    text-decoration: none;
+  }
+</style>
+</head>
+<body>
+  <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">
+    <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </button>
+
+  <section class="hero" id="hero">
+    <div class="hero-content">
+      <h1>Numerical Linear Algebra from Scratch in NumPy</h1>
+    </div>
+  </section>
+
+  <div class="wrap">
+    
+
+    <section class="section how-section" id="how-section">
+      <h2 class="section-title">How it was built</h2>
+      
+            <div class="part-reveal" style="opacity: 1">
+              <h3 class="part-title">Part 1: Triangular Systems and LU</h3>
+              <p class="part-description">Solve square systems the way real libraries do (sections 7.6.1 and 7.7.1): factor, then substitute. You write the two triangular solvers, an LU factorization that breaks on a tiny pivot, the partial-pivoting version that does not, and a solver that recovers the book&#39;s worked answer x = [1, -2, -2].</p>
+              
+            </div>
+          
+            <div class="part-reveal" style="opacity: 0.6">
+              <h3 class="part-title">Part 2: Cholesky: Log Determinants and Sampling</h3>
+              <p class="part-description">Symmetric positive definite matrices are the covariance and precision matrices of everything in this book, and they get a factorization of their own (sections 7.6.3 and 7.1.4.2). You build it, use it as a test of positive definiteness, compute log determinants that survive where the determinant underflows, and draw Gaussian samples.</p>
+              
+            </div>
+          
+            <div class="part-reveal" style="opacity: 0.6">
+              <h3 class="part-title">Part 3: QR and Least Squares</h3>
+              <p class="part-description">Orthogonalize the columns of a matrix (Section 7.6.2) in three ways and see that they are not numerically equal: classical Gram-Schmidt, modified Gram-Schmidt and Householder reflections. Then solve least squares (Section 7.7.3) through the normal equations and through QR, and meet the squared condition number that separates them.</p>
+              
+            </div>
+          
+            <div class="part-reveal" style="opacity: 0.6">
+              <h3 class="part-title">Part 4: The Power Method and Its Block Version</h3>
+              <p class="part-description">Find eigenvectors using nothing but matrix-vector products (sections 7.4.6 and 7.4.7). You measure the convergence rate the book predicts, peel off further eigenpairs by deflation, and then replace deflation with orthogonal iteration and compare the two on the 400 x 400 Gram matrix of the Olivetti faces.</p>
+              
+            </div>
+          
+            <div class="part-reveal" style="opacity: 0.6">
+              <h3 class="part-title">Part 5: The SVD, Twice</h3>
+              <p class="part-description">Build the SVD through the eigenvectors of A^T A, as Section 7.5.2 describes, and find the singular values it cannot see. Then build it again with one-sided Jacobi, which works on A directly, and use that for the pseudo-inverse, rank, null space and condition number (sections 7.5.3, 7.5.4, 7.1.4.4), ending with a study of how each least squares route degrades.</p>
+              
+            </div>
+          
+            <div class="part-reveal" style="opacity: 0.6">
+              <h3 class="part-title">Part 6: Truncated SVD and a Photo</h3>
+              <p class="part-description">Compress a 200 x 320 photo, the same size as the image in the book&#39;s Figure 7.9, with the truncated SVD (Section 7.5.5). You count the parameters, measure the error and correct the misprinted error formula of eq 7.201, then reproduce Figure 7.10 by shuffling the pixels to see that low rank is a property of natural images.</p>
+              
+            </div>
+          
+            <div class="part-reveal" style="opacity: 0.6">
+              <h3 class="part-title">Part 7: Block Structure: Schur, Woodbury and Rank-One Updates</h3>
+              <p class="part-description">Exploit structure rather than doing a dense solve (Section 7.3). Invert a matrix block by block through its Schur complement, solve a diagonal-plus-low-rank system with the matrix inversion lemma, and update an inverse and a log determinant one observation at a time. You also measure what the Woodbury identity really costs.</p>
+              
+            </div>
+          
+            <div class="part-reveal" style="opacity: 0.6">
+              <h3 class="part-title">Part 8: Whitening, Least-Norm Solutions and Faces</h3>
+              <p class="part-description">Put the toolkit to work on data. Compute PCA and ZCA whitening (Section 7.4.5, Figure 7.7), solve underdetermined systems with the least-norm solution (Section 7.7.2, Figure 7.12a), and fit ridge regression through its N x N form. The capstone classifies 40 people from the 4096 pixels of their Olivetti faces, with only your own code.</p>
+              
+            </div>
+          
+    </section>
+
+    <footer class="footer">
+      <p>Built by <strong>@avikds</strong> on <a href="https://deep-ml.com" target="_blank">Deep-ML</a></p>
+    </footer>
+  </div>
+
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isDark = html.style.colorScheme === 'dark';
+      html.style.colorScheme = isDark ? 'light' : 'dark';
+      localStorage.setItem('theme', isDark ? 'light' : 'dark');
+    }
+    function initTheme() {
+      const saved = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const isDark = saved === 'dark' || (saved === null && prefersDark);
+      document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+    }
+    initTheme();
+    window.scrollToOutput = function() {
+      const output = document.getElementById('output-section');
+      output?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+  </script>
+</body>
+</html>
