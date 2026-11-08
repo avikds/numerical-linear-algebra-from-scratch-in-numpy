@@ -36,6 +36,7 @@ python scaffold.py
 - [x] **24.** partitioned_inverse
 - [x] **25.** woodbury_solve
 - [x] **26.** rank_one_update
+- [x] **27.** whitening_matrices
 
 ---
 

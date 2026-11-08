@@ -1857,3 +1857,74 @@ def rank_one_update(A_inv, logabsdet, u, v):
 
     return new_inv, new_logabsdet
 
+# Step 27 - whitening_matrices
+def whitening_matrices(X):
+    """
+    Compute the PCA and ZCA whitening matrices of a data matrix.
+
+    Parameters:
+        X : Data matrix of shape (N, D), with full column rank
+            after centering.
+
+    Returns:
+        W_pca : PCA whitening matrix of shape (D, D).
+        W_zca : ZCA whitening matrix of shape (D, D).
+        mu    : Mean vector of shape (D,).
+
+    Notes:
+        - Uses the One-Sided Jacobi SVD.
+        - Computes covariance using division by N.
+        - Does not explicitly form the covariance matrix.
+        - Does not modify the original input X.
+    """
+    # Convert X to a floating-point array without modifying the original.
+    X = np.asarray(X, dtype=float)
+
+    # Validate the input dimensions.
+    if X.ndim != 2:
+        raise ValueError("X must be a two-dimensional matrix.")
+
+    N, D = X.shape
+
+    if N == 0 or D == 0:
+        raise ValueError("X must have at least one row and one column.")
+
+    # Calculate the mean of each feature.
+    mu = np.mean(X, axis=0)
+
+    # Center the data.
+    Xc = X - mu
+
+    # Scale the centered data by sqrt(N).
+    # This ensures the singular values squared correspond
+    # to the covariance eigenvalues.
+    X_scaled = Xc / np.sqrt(N)
+
+    # Compute the SVD of the scaled centered data.
+    # X_scaled = U @ diag(s) @ V.T
+    _, s, Vt = svd_jacobi(X_scaled)
+
+    # Check that all singular values are positive.
+    # The instructions assume full column rank after centering.
+    if np.any(s <= 0.0):
+        raise ValueError(
+            "X must have full column rank after centering."
+        )
+
+    # The right singular vectors are the covariance eigenvectors.
+    E = Vt.T
+
+    # The covariance eigenvalues are s squared.
+    # Therefore, D^(-1/2) is simply diag(1 / s).
+    inv_s = 1.0 / s
+
+    # Construct the PCA whitening matrix:
+    # W_pca = D^(-1/2) @ E.T
+    W_pca = inv_s[:, None] * Vt
+
+    # Construct the ZCA whitening matrix:
+    # W_zca = E @ D^(-1/2) @ E.T
+    W_zca = (E * inv_s[None, :]) @ E.T
+
+    return W_pca, W_zca, mu
+
