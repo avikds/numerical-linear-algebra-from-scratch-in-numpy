@@ -27,6 +27,7 @@ python scaffold.py
 - [x] **15.** svd_via_eig
 - [x] **16.** svd_jacobi
 - [x] **17.** pinv_svd
+- [x] **18.** rank_and_null_space
 
 ---
 

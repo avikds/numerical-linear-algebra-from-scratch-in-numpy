@@ -1196,3 +1196,68 @@ def pinv_svd(A, rcond=1e-12):
 
     return A_pinv
 
+# Step 18 - rank_and_null_space
+def rank_and_null_space(A, rcond=1e-12):
+    """
+    Compute the numerical rank and an orthonormal basis
+    for the null space of a matrix using One-Sided Jacobi SVD.
+
+    Parameters:
+        A     : Input matrix of shape (m, n).
+        rcond : Relative tolerance for determining numerical rank.
+
+    Returns:
+        rank : Numerical rank of A as a Python integer.
+        N    : Orthonormal basis of the null space,
+               with shape (n, n - rank).
+
+    Notes:
+        - Uses svd_jacobi() from Step 16.
+        - Pads wide matrices with zero rows to obtain all
+          right singular vectors.
+        - Does not modify the original matrix.
+    """
+    # Convert A to a floating-point array without modifying it.
+    A = np.asarray(A, dtype=float)
+
+    # Validate the input dimensions.
+    if A.ndim != 2:
+        raise ValueError("A must be a two-dimensional matrix.")
+
+    # Validate the relative tolerance.
+    if rcond < 0:
+        raise ValueError("rcond must be non-negative.")
+
+    m, n = A.shape
+
+    # Handle matrices with zero columns.
+    if n == 0:
+        return 0, np.zeros((0, 0), dtype=float)
+
+    # For wide matrices, append zero rows so that the matrix
+    # has at least as many rows as columns.
+    # This ensures that SVD returns all n right singular vectors.
+    if m < n:
+        A_work = np.vstack((
+            A,
+            np.zeros((n - m, n), dtype=float)
+        ))
+    else:
+        A_work = A.copy()
+
+    # Compute the thin SVD using the One-Sided Jacobi algorithm.
+    U, s, Vt = svd_jacobi(A_work)
+
+    # Calculate the numerical rank threshold.
+    threshold = rcond * s[0]
+
+    # Count the singular values strictly greater than the threshold.
+    rank = int(np.count_nonzero(s > threshold))
+
+    # The right singular vectors are stored as rows in Vt.
+    # Columns corresponding to zero singular values form
+    # an orthonormal basis for the null space.
+    N = Vt[rank:, :].T.copy()
+
+    return rank, N
+
