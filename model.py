@@ -696,3 +696,73 @@ def lstsq_qr(A, b):
 
     return x
 
+# Step 12 - power_method
+def power_method(A, v0, n_iter):
+    """
+    Estimate the dominant eigenvalue and eigenvector of a
+    real symmetric matrix using the Power Method.
+
+    Parameters:
+        A      : Real square matrix of shape (n, n).
+        v0     : Initial vector of shape (n,).
+        n_iter : Number of power iterations to perform.
+
+    Returns:
+        lam : Rayleigh quotient, returned as a Python float.
+        u   : Final normalized eigenvector estimate of shape (n,).
+
+    Raises:
+        ValueError: If A is not square, v0 has an invalid shape,
+                    or a zero vector prevents normalization.
+    """
+    # Convert inputs to floating-point arrays without
+    # modifying the original inputs.
+    A = np.asarray(A, dtype=float)
+    u = np.asarray(v0, dtype=float).copy()
+
+    # Validate the matrix dimensions.
+    if A.ndim != 2 or A.shape[0] != A.shape[1]:
+        raise ValueError("A must be a square matrix.")
+
+    n = A.shape[0]
+
+    # Validate the initial vector.
+    if u.ndim != 1 or u.shape[0] != n:
+        raise ValueError("v0 must be a vector of shape (n,).")
+
+    # Validate the number of iterations.
+    if not isinstance(n_iter, (int, np.integer)) or n_iter < 0:
+        raise ValueError("n_iter must be a non-negative integer.")
+
+    # Normalize the initial vector.
+    norm_u = np.sqrt(np.dot(u, u))
+
+    if norm_u == 0.0:
+        raise ValueError("Initial vector must be nonzero.")
+
+    u = u / norm_u
+
+    # Perform exactly n_iter power iterations.
+    for _ in range(n_iter):
+
+        # Multiply the matrix by the current eigenvector estimate.
+        v = A @ u
+
+        # Calculate the Euclidean norm.
+        norm_v = np.sqrt(np.dot(v, v))
+
+        # A zero result cannot be normalized.
+        if norm_v == 0.0:
+            raise ValueError(
+                "Power iteration produced a zero vector; "
+                "normalization is not possible."
+            )
+
+        # Normalize the updated vector.
+        u = v / norm_v
+
+    # Calculate the Rayleigh quotient.
+    lam = float(np.dot(u, A @ u))
+
+    return lam, u
+

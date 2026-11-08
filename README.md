@@ -21,6 +21,7 @@ python scaffold.py
 - [x] **9.** householder_qr
 - [x] **10.** lstsq_normal
 - [x] **11.** lstsq_qr
+- [x] **12.** power_method
 
 ---
 
