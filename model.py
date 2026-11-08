@@ -894,3 +894,97 @@ def orthogonal_iteration(A, k, n_iter, seed=0):
 
     return vals, vecs
 
+# Step 15 - svd_via_eig
+def svd_via_eig(A, n_iter=500, seed=0):
+    """
+    Compute the thin Singular Value Decomposition (SVD)
+    using eigenvectors of A.T @ A or A @ A.T.
+
+    The decomposition satisfies:
+        A = (U * s) @ Vt
+
+    Parameters:
+        A      : Input matrix of shape (m, n).
+        n_iter : Number of orthogonal iterations.
+        seed   : Random seed for reproducibility.
+
+    Returns:
+        U  : Left singular vectors of shape (m, r).
+        s  : Singular values of shape (r,), in decreasing order.
+        Vt : Transpose of right singular vectors, shape (r, n).
+
+        where r = min(m, n).
+    """
+    # Convert A to a floating-point array without modifying the original.
+    A = np.asarray(A, dtype=float)
+
+    # Validate the input dimensions.
+    if A.ndim != 2:
+        raise ValueError("A must be a two-dimensional matrix.")
+
+    m, n = A.shape
+    r = min(m, n)
+
+    # Case 1: A has at least as many rows as columns.
+    if m >= n:
+
+        # Form the smaller symmetric matrix A.T @ A.
+        gram = A.T @ A
+
+        # Compute its eigenvalues and eigenvectors using
+        # orthogonal iteration.
+        eigvals, V = orthogonal_iteration(
+            gram, r, n_iter, seed
+        )
+
+        # Clip negative eigenvalues caused by floating-point
+        # rounding before taking square roots.
+        s = np.sqrt(np.maximum(eigvals, 0.0))
+
+        # Recover the left singular vectors.
+        AV = A @ V
+        U = np.zeros((m, r), dtype=float)
+
+        for i in range(r):
+
+            if s[i] > 0.0:
+                U[:, i] = AV[:, i] / s[i]
+            else:
+                # Do not divide by a zero singular value.
+                U[:, i] = AV[:, i]
+
+        # Right singular vectors are stored as rows in Vt.
+        Vt = V.T
+
+    # Case 2: A has more columns than rows.
+    else:
+
+        # Form the smaller symmetric matrix A @ A.T.
+        gram = A @ A.T
+
+        # Compute its eigenvalues and eigenvectors using
+        # orthogonal iteration.
+        eigvals, U = orthogonal_iteration(
+            gram, r, n_iter, seed
+        )
+
+        # Clip negative eigenvalues before taking square roots.
+        s = np.sqrt(np.maximum(eigvals, 0.0))
+
+        # Recover the right singular vectors.
+        ATU = A.T @ U
+        V = np.zeros((n, r), dtype=float)
+
+        for i in range(r):
+
+            if s[i] > 0.0:
+                V[:, i] = ATU[:, i] / s[i]
+            else:
+                # Do not divide by a zero singular value.
+                V[:, i] = ATU[:, i]
+
+        # Right singular vectors are stored as rows in Vt.
+        Vt = V.T
+
+    return U, s, Vt
+
