@@ -2044,3 +2044,205 @@ def ridge_dual(X, Y, lam):
 
     return w
 
+# Step 30 - face_accuracy_vs_rank
+def face_accuracy_vs_rank(
+    X_train,
+    y_train,
+    X_test,
+    y_test,
+    ranks,
+    n_iter=150,
+    seed=0
+):
+    """
+    Classify face images using dimensionality reduction
+    and least-squares regression.
+
+    Parameters:
+        X_train : Training images, one flattened image per row,
+                  shape (N_train, D).
+        y_train : Integer training labels, shape (N_train,).
+        X_test  : Testing images, shape (N_test, D).
+        y_test  : Integer testing labels, shape (N_test,).
+        ranks   : List of PCA dimensions to evaluate.
+        n_iter  : Number of orthogonal iterations (default=150).
+        seed    : Random seed for reproducibility (default=0).
+
+    Returns:
+        accuracies : Dictionary mapping each rank K to its
+                     test classification accuracy as a Python float.
+
+    Notes:
+        - Centers both datasets using the training mean.
+        - Uses orthogonal_iteration() on X_centered @ X_centered.T.
+        - Uses K_max + 10 eigenvectors for improved convergence.
+        - Recovers right singular vectors from the Gram eigenvectors.
+        - Fits one-hot targets using lstsq_qr().
+        - Does not modify the original input arrays.
+        - Does not use np.linalg.
+    """
+    # Convert inputs to floating-point arrays where appropriate.
+    X_train = np.asarray(X_train, dtype=float)
+    X_test = np.asarray(X_test, dtype=float)
+
+    y_train = np.asarray(y_train)
+    y_test = np.asarray(y_test)
+
+    # Validate the image matrices.
+    if X_train.ndim != 2 or X_test.ndim != 2:
+        raise ValueError("X_train and X_test must be two-dimensional.")
+
+    N_train, D = X_train.shape
+    N_test = X_test.shape[0]
+
+    if N_train == 0 or N_test == 0 or D == 0:
+        raise ValueError("Training and testing data must be non-empty.")
+
+    if X_test.shape[1] != D:
+        raise ValueError("Training and testing feature dimensions must match.")
+
+    # Validate the label vectors.
+    if y_train.shape != (N_train,):
+        raise ValueError("y_train must have shape (N_train,).")
+
+    if y_test.shape != (N_test,):
+        raise ValueError("y_test must have shape (N_test,).")
+
+    # Convert ranks into a list of Python integers.
+    ranks = list(ranks)
+
+    if len(ranks) == 0:
+        raise ValueError("ranks must contain at least one value.")
+
+    for K in ranks:
+        if not isinstance(K, (int, np.integer)) or K < 0:
+            raise ValueError("Every rank must be a non-negative integer.")
+
+    ranks = [int(K) for K in ranks]
+
+    # Determine the maximum requested rank.
+    K_max = max(ranks)
+
+    # The instructions require at least 10 additional dimensions
+    # beyond the largest requested rank.
+    max_allowed = min(N_train, D) - 10
+
+    if K_max > max_allowed:
+        raise ValueError(
+            "Every rank must be at least 10 smaller than "
+            "min(N_train, D)."
+        )
+
+    # -------------------------------------------------
+    # Step 1: Center training and testing data.
+    # -------------------------------------------------
+
+    # Calculate the training mean.
+    mu = np.mean(X_train, axis=0)
+
+    # Center the training and testing datasets using
+    # the same training mean.
+    X_train_c = X_train - mu
+    X_test_c = X_test - mu
+
+    # -------------------------------------------------
+    # Step 2: Compute the top principal directions.
+    # -------------------------------------------------
+
+    # Construct the Gram matrix in sample space.
+    # Its dimensions are (N_train, N_train).
+    gram = X_train_c @ X_train_c.T
+
+    # Compute K_max + 10 leading eigenvectors using
+    # orthogonal iteration.
+    eigvals, U_samples = orthogonal_iteration(
+        gram,
+        K_max + 10,
+        n_iter,
+        seed=seed
+    )
+
+    # Clip small negative eigenvalues caused by
+    # floating-point rounding.
+    eigvals = np.maximum(eigvals, 0.0)
+
+    # Recover the singular values.
+    singular_values = np.sqrt(eigvals)
+
+    # Only the first K_max directions are required.
+    s = singular_values[:K_max]
+
+    # Check that the required directions have
+    # strictly positive singular values.
+    if np.any(s <= 0.0):
+        raise ValueError(
+            "Insufficient positive singular values "
+            "to construct the requested PCA directions."
+        )
+
+    # Recover the corresponding right singular vectors:
+    # V = X_train_c.T @ U_samples @ Sigma^(-1).
+    #
+    # Each column of V represents one principal direction.
+    V = (
+        X_train_c.T @ U_samples[:, :K_max]
+    ) / s[None, :]
+
+    # -------------------------------------------------
+    # Step 3: Create centered one-hot training targets.
+    # -------------------------------------------------
+
+    # Identify the unique training classes.
+    classes = np.unique(y_train)
+
+    # One-hot encode the training labels.
+    Y_onehot = (
+        y_train[:, None] == classes[None, :]
+    ).astype(float)
+
+    # Calculate the mean of each one-hot target column.
+    target_mean = np.mean(Y_onehot, axis=0)
+
+    # Center the target matrix.
+    Y_centered = Y_onehot - target_mean
+
+    # Initialize the accuracy dictionary.
+    accuracies = {}
+
+    # -------------------------------------------------
+    # Step 4: Train and evaluate each requested rank.
+    # -------------------------------------------------
+
+    for K in ranks:
+
+        # Select the first K principal directions.
+        V_K = V[:, :K]
+
+        # Project training data into the reduced space.
+        Z_train = X_train_c @ V_K
+
+        # Project testing data using the same directions.
+        Z_test = X_test_c @ V_K
+
+        # Fit the centered one-hot targets using
+        # the previously implemented Householder QR solver.
+        W = lstsq_qr(Z_train, Y_centered)
+
+        # Predict the centered class outputs and restore
+        # the original target means.
+        predictions = Z_test @ W + target_mean
+
+        # Select the class with the largest predicted output.
+        predicted_indices = np.argmax(predictions, axis=1)
+
+        # Convert predicted class indices back to original labels.
+        y_pred = classes[predicted_indices]
+
+        # Calculate test classification accuracy.
+        accuracy = float(np.mean(y_pred == y_test))
+
+        # Store the result for this PCA rank.
+        accuracies[K] = accuracy
+
+    return accuracies
+
