@@ -29,6 +29,7 @@ python scaffold.py
 - [x] **17.** pinv_svd
 - [x] **18.** rank_and_null_space
 - [x] **19.** condition_number
+- [x] **20.** least_squares_study
 
 ---
 

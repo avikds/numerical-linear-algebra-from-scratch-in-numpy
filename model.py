@@ -1301,3 +1301,116 @@ def condition_number(A):
     # Calculate and return the condition number as a Python float.
     return float(sigma_max / sigma_min)
 
+# Step 20 - least_squares_study
+def least_squares_study(degrees, n_points=50):
+    """
+    Compare the numerical accuracy of three least-squares methods
+    as the polynomial degree and condition number increase.
+
+    Methods:
+        1. Normal equations using lstsq_normal().
+        2. Householder QR using lstsq_qr().
+        3. SVD pseudo-inverse using pinv_svd().
+
+    Parameters:
+        degrees  : Iterable of polynomial degrees to evaluate.
+        n_points : Number of data points (default=50).
+
+    Returns:
+        results : List of dictionaries, one for each degree.
+                  Each dictionary contains exactly:
+                  'degree', 'kappa', 'normal', 'qr', 'pinv'.
+
+                  All values are Python integers or floats.
+
+    Notes:
+        If a least-squares method raises ValueError,
+        its corresponding relative error is recorded as infinity.
+    """
+    # Generate equally spaced points between 0 and 1.
+    x = np.linspace(0.0, 1.0, n_points)
+
+    # Store the results for every polynomial degree.
+    results = []
+
+    # Evaluate each requested polynomial degree.
+    for degree in degrees:
+
+        # Construct the Vandermonde design matrix.
+        A = np.vander(
+            x,
+            degree + 1,
+            increasing=True
+        )
+
+        # Define the true polynomial coefficients.
+        w = np.ones(degree + 1, dtype=float)
+
+        # Generate noise-free target values.
+        b = A @ w
+
+        # Calculate the condition number of the design matrix.
+        kappa = float(condition_number(A))
+
+        # Calculate the norm of the true coefficient vector.
+        norm_w = np.sqrt(np.sum(w ** 2))
+
+        # -------------------------------------------------
+        # 1. Least squares using Normal Equations
+        # -------------------------------------------------
+        try:
+            w_normal = lstsq_normal(A, b)
+
+            # Calculate the relative coefficient error.
+            error_normal = (
+                np.sqrt(np.sum((w_normal - w) ** 2)) / norm_w
+            )
+
+            error_normal = float(error_normal)
+
+        except ValueError:
+            error_normal = float("inf")
+
+        # -------------------------------------------------
+        # 2. Least squares using Householder QR
+        # -------------------------------------------------
+        try:
+            w_qr = lstsq_qr(A, b)
+
+            # Calculate the relative coefficient error.
+            error_qr = (
+                np.sqrt(np.sum((w_qr - w) ** 2)) / norm_w
+            )
+
+            error_qr = float(error_qr)
+
+        except ValueError:
+            error_qr = float("inf")
+
+        # -------------------------------------------------
+        # 3. Least squares using SVD Pseudo-Inverse
+        # -------------------------------------------------
+        try:
+            w_pinv = pinv_svd(A, rcond=1e-15) @ b
+
+            # Calculate the relative coefficient error.
+            error_pinv = (
+                np.sqrt(np.sum((w_pinv - w) ** 2)) / norm_w
+            )
+
+            error_pinv = float(error_pinv)
+
+        except ValueError:
+            error_pinv = float("inf")
+
+        # Store the results for the current polynomial degree.
+        results.append({
+            "degree": int(degree),
+            "kappa": kappa,
+            "normal": error_normal,
+            "qr": error_qr,
+            "pinv": error_pinv
+        })
+
+    return results
+
