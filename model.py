@@ -1539,3 +1539,103 @@ def truncation_error(s, K):
 
     return frobenius, spectral, printed
 
+# Step 23 - spectrum_vs_shuffled
+def spectrum_vs_shuffled(img, seed=0):
+    """
+    Compare the singular-value spectra of an original image
+    and a randomly shuffled version of that image.
+
+    Parameters:
+        img  : Grayscale image represented as a 2D matrix.
+        seed : Random seed for reproducibility (default=0).
+
+    Returns:
+        s_img      : Singular values of the original image.
+        s_shuffled : Singular values of the shuffled image.
+
+    Notes:
+        - Every pixel is randomly permuted.
+        - The shuffled image retains the original dimensions.
+        - Both SVD calculations use svd_jacobi().
+        - The original image is not modified.
+    """
+    # Convert the image to a floating-point array.
+    img = np.asarray(img, dtype=float)
+
+    # Validate that the image is two-dimensional.
+    if img.ndim != 2:
+        raise ValueError("img must be a two-dimensional matrix.")
+
+    # Create a reproducible random number generator.
+    rng = np.random.default_rng(seed)
+
+    # Flatten the image, randomly permute ALL pixels,
+    # and reshape it back to its original dimensions.
+    shuffled = rng.permutation(img.ravel()).reshape(img.shape)
+
+    # Compute the singular values of the original image.
+    _, s_img, _ = svd_jacobi(img)
+
+    # Compute the singular values of the shuffled image.
+    _, s_shuffled, _ = svd_jacobi(shuffled)
+
+    return s_img, s_shuffled
+
+
+def rank_for_energy(s, frac):
+    """
+    Find the smallest number of leading singular values
+    required to retain at least a specified fraction
+    of the total squared-singular-value energy.
+
+    Parameters:
+        s    : Singular values sorted in decreasing order.
+        frac : Required fraction of total energy, where
+               0 < frac <= 1.
+
+    Returns:
+        K : Smallest number of singular values required,
+            returned as a Python integer.
+    """
+    # Convert singular values to a floating-point array.
+    s = np.asarray(s, dtype=float)
+
+    # Validate the singular-value array.
+    if s.ndim != 1:
+        raise ValueError("s must be a one-dimensional array.")
+
+    # Validate the requested energy fraction.
+    if not 0.0 < frac <= 1.0:
+        raise ValueError("frac must satisfy 0 < frac <= 1.")
+
+    # An empty singular-value array requires zero values.
+    if len(s) == 0:
+        return 0
+
+    # Calculate the squared singular values.
+    energy = s ** 2
+
+    # Calculate cumulative energy from the largest
+    # singular value to the smallest.
+    cumulative_energy = np.cumsum(energy)
+
+    # Total squared-singular-value energy.
+    total_energy = float(cumulative_energy[-1])
+
+    # Handle a matrix with all-zero singular values.
+    if total_energy == 0.0:
+        return 0
+
+    # Calculate the required energy threshold.
+    target_energy = frac * total_energy
+
+    # Find the first position where cumulative energy
+    # reaches or exceeds the requested fraction.
+    K = np.searchsorted(
+        cumulative_energy,
+        target_energy,
+        side="left"
+    ) + 1
+
+    return int(K)
+
