@@ -642,3 +642,57 @@ def lstsq_normal(A, b):
 
     return x
 
+# Step 11 - lstsq_qr
+def lstsq_qr(A, b):
+    """
+    Solve a least squares problem using Householder QR factorization.
+
+    The method computes:
+        A = Q @ R
+        R @ x = Q.T @ b
+
+    Parameters:
+        A : Matrix of shape (m, n), where m >= n,
+            with full column rank.
+        b : Right-hand side vector of shape (m,)
+            or matrix of shape (m, k).
+
+    Returns:
+        x : Least squares solution of shape (n,)
+            or (n, k), matching the number of right-hand sides.
+
+    Raises:
+        ValueError: If the input dimensions are invalid.
+    """
+    # Convert inputs to floating-point arrays without modifying
+    # the original inputs.
+    A = np.asarray(A, dtype=float)
+    b = np.asarray(b, dtype=float)
+
+    # Validate the dimensions of A.
+    if A.ndim != 2:
+        raise ValueError("A must be a two-dimensional matrix.")
+
+    m, n = A.shape
+
+    if m < n:
+        raise ValueError("A must have at least as many rows as columns.")
+
+    # Validate the dimensions of b.
+    if b.ndim not in (1, 2) or b.shape[0] != m:
+        raise ValueError("b must have shape (m,) or (m, k).")
+
+    # Perform reduced Householder QR factorization.
+    # A = Q @ R
+    Q, R = householder_qr(A)
+
+    # Project the right-hand side onto the orthonormal
+    # columns of Q.
+    Qtb = Q.T @ b
+
+    # Solve the upper triangular system:
+    # R @ x = Q.T @ b
+    x = back_substitution(R, Qtb)
+
+    return x
+

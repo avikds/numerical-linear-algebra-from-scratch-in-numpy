@@ -20,6 +20,7 @@ python scaffold.py
 - [x] **8.** gram_schmidt_qr
 - [x] **9.** householder_qr
 - [x] **10.** lstsq_normal
+- [x] **11.** lstsq_qr
 
 ---
 
