@@ -13,6 +13,7 @@ python scaffold.py
 - [x] **1.** forward_substitution
 - [x] **2.** lu_no_pivot
 - [x] **3.** lu_partial_pivot
+- [x] **4.** solve_lu
 
 ---
 

@@ -194,3 +194,48 @@ def lu_partial_pivot(A):
 
     return P, L, U
 
+# Step 4 - solve_lu
+def solve_lu(A, b):
+    """
+    Solve the square linear system A @ x = b using
+    LU factorization with partial pivoting.
+
+    Parameters:
+        A : Square coefficient matrix of shape (n, n).
+        b : Right-hand side vector of shape (n,)
+            or matrix of shape (n, k).
+
+    Returns:
+        x : Solution with the same shape as b and float dtype.
+
+    Raises:
+        ValueError: If A is singular (any diagonal entry of U is zero)
+                    or if b has an invalid shape.
+    """
+    # Convert b to a floating-point array without modifying the original.
+    b = np.asarray(b, dtype=float)
+
+    # Factor A using LU decomposition with partial pivoting.
+    P, L, U = lu_partial_pivot(A)
+
+    n = U.shape[0]
+
+    # Validate the dimensions of the right-hand side.
+    if b.ndim not in (1, 2) or b.shape[0] != n:
+        raise ValueError("b must have shape (n,) or (n, k).")
+
+    # Check whether U has any exactly zero diagonal entries.
+    if np.any(np.diag(U) == 0.0):
+        raise ValueError("Matrix A is singular. Cannot solve the system.")
+
+    # Apply the permutation matrix to the right-hand side.
+    Pb = P @ b
+
+    # First solve L @ y = P @ b using forward substitution.
+    y = forward_substitution(L, Pb)
+
+    # Then solve U @ x = y using backward substitution.
+    x = back_substitution(U, y)
+
+    return x
+
