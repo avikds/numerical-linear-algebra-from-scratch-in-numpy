@@ -25,6 +25,7 @@ python scaffold.py
 - [x] **13.** top_k_deflation
 - [x] **14.** orthogonal_iteration
 - [x] **15.** svd_via_eig
+- [x] **16.** svd_jacobi
 
 ---
 

@@ -988,3 +988,166 @@ def svd_via_eig(A, n_iter=500, seed=0):
 
     return U, s, Vt
 
+# Step 16 - svd_jacobi
+def svd_jacobi(A, tol=1e-14, max_sweeps=40):
+    """
+    Compute the thin Singular Value Decomposition using
+    the one-sided Jacobi algorithm.
+
+    The decomposition satisfies:
+        A = (U * s) @ Vt
+
+    Parameters:
+        A          : Input matrix of shape (m, n).
+        tol        : Relative orthogonality tolerance.
+        max_sweeps : Maximum number of Jacobi sweeps.
+
+    Returns:
+        U  : Left singular vectors of shape (m, r).
+        s  : Singular values of shape (r,), sorted in
+             decreasing order and non-negative.
+        Vt : Transpose of right singular vectors,
+             shape (r, n).
+
+        where r = min(m, n).
+
+    Notes:
+        - Works directly on A without forming A.T @ A.
+        - Handles wide and tall matrices.
+        - Singular values at or below 1e-15 * s[0]
+          are treated as exactly zero.
+        - The original input matrix is not modified.
+    """
+    # Convert A to a floating-point array.
+    A = np.asarray(A, dtype=float)
+
+    # Validate the input dimensions.
+    if A.ndim != 2:
+        raise ValueError("A must be a two-dimensional matrix.")
+
+    m, n = A.shape
+
+    # For a wide matrix, compute the SVD of A.T and
+    # exchange the roles of the left and right factors.
+    if m < n:
+        U_t, s, Vt_t = svd_jacobi(
+            A.T, tol=tol, max_sweeps=max_sweeps
+        )
+
+        U = Vt_t.T
+        Vt = U_t.T
+
+        return U, s, Vt
+
+    # Work with a copy of A so the original is unchanged.
+    B = A.copy()
+
+    # Initialize V as the identity matrix.
+    # Throughout the algorithm, B = A @ V.
+    V = np.eye(n, dtype=float)
+
+    # Perform Jacobi sweeps over all pairs of columns.
+    for sweep in range(max_sweeps):
+
+        rotations_performed = False
+
+        for p in range(n - 1):
+            for q in range(p + 1, n):
+
+                # Extract the current pair of columns.
+                ap = B[:, p]
+                aq = B[:, q]
+
+                # Calculate the squared column norms
+                # and the inner product.
+                alpha = np.dot(ap, ap)
+                beta = np.dot(aq, aq)
+                gamma = np.dot(ap, aq)
+
+                # Calculate the column norms.
+                norm_p = np.sqrt(alpha)
+                norm_q = np.sqrt(beta)
+
+                # Skip pairs that are already sufficiently
+                # orthogonal, or contain a zero column.
+                if (
+                    gamma == 0.0
+                    or norm_p == 0.0
+                    or norm_q == 0.0
+                    or abs(gamma) <= tol * norm_p * norm_q
+                ):
+                    continue
+
+                # Calculate the Jacobi rotation parameter.
+                tau = (beta - alpha) / (2.0 * gamma)
+
+                # Compute t using a numerically stable formula.
+                t = np.copysign(1.0, tau) / (
+                    abs(tau) + np.hypot(1.0, tau)
+                )
+
+                # Calculate the cosine and sine of the rotation.
+                c = 1.0 / np.sqrt(1.0 + t * t)
+                s = t * c
+
+                # Save the original columns before updating them.
+                ap_old = B[:, p].copy()
+                aq_old = B[:, q].copy()
+
+                # Apply the Jacobi rotation to the working matrix.
+                B[:, p] = c * ap_old - s * aq_old
+                B[:, q] = s * ap_old + c * aq_old
+
+                # Apply the same rotation to V.
+                vp_old = V[:, p].copy()
+                vq_old = V[:, q].copy()
+
+                V[:, p] = c * vp_old - s * vq_old
+                V[:, q] = s * vp_old + c * vq_old
+
+                rotations_performed = True
+
+        # Stop when an entire sweep performs no rotations.
+        if not rotations_performed:
+            break
+
+    # Calculate the singular values from the column lengths
+    # of the orthogonalized working matrix.
+    singular_values = np.sqrt(np.sum(B * B, axis=0))
+
+    # Sort singular values in decreasing order.
+    order = np.argsort(-singular_values, kind="stable")
+
+    singular_values = singular_values[order]
+    B = B[:, order]
+    V = V[:, order]
+
+    # Initialize U with zeros.
+    U = np.zeros((m, n), dtype=float)
+
+    # Apply the numerical zero threshold.
+    if n > 0:
+        threshold = 1e-15 * singular_values[0]
+    else:
+        threshold = 0.0
+
+    # Construct the left singular vectors.
+    for j in range(n):
+
+        if singular_values[j] > threshold:
+
+            # Normalize the corresponding column of B.
+            U[:, j] = B[:, j] / singular_values[j]
+
+        else:
+            # Treat sufficiently small singular values as zero.
+            singular_values[j] = 0.0
+
+            # The corresponding column of U remains zero.
+            U[:, j] = 0.0
+
+    # The right singular vectors are stored as rows in Vt.
+    Vt = V.T
+
+    return U, singular_values, Vt
+
