@@ -37,6 +37,7 @@ python scaffold.py
 - [x] **25.** woodbury_solve
 - [x] **26.** rank_one_update
 - [x] **27.** whitening_matrices
+- [x] **28.** least_norm
 
 ---
 

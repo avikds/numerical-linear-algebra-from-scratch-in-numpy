@@ -1928,3 +1928,62 @@ def whitening_matrices(X):
 
     return W_pca, W_zca, mu
 
+# Step 28 - least_norm
+def least_norm(A, b):
+    """
+    Compute the minimum-norm solution of an underdetermined
+    linear system A @ x = b.
+
+    The solution is:
+        x = A.T @ (A @ A.T)^(-1) @ b
+
+    Parameters:
+        A : Matrix of shape (m, n), where m < n and
+            the rows are linearly independent.
+        b : Right-hand side vector of shape (m,)
+            or matrix of shape (m, k).
+
+    Returns:
+        x : Minimum-norm solution of shape (n,)
+            or (n, k), matching the right-hand side.
+
+    Notes:
+        - Uses exactly one solve_chol() call.
+        - Solves a symmetric positive definite system
+          of size (m, m).
+        - Does not explicitly calculate a matrix inverse.
+        - Does not modify the original inputs.
+    """
+    # Convert inputs to floating-point arrays without modifying
+    # the original inputs.
+    A = np.asarray(A, dtype=float)
+    b = np.asarray(b, dtype=float)
+
+    # Validate the coefficient matrix.
+    if A.ndim != 2:
+        raise ValueError("A must be a two-dimensional matrix.")
+
+    m, n = A.shape
+
+    # Ensure that the system is underdetermined.
+    if m >= n:
+        raise ValueError("A must be underdetermined (m < n).")
+
+    # Validate the right-hand side.
+    if b.ndim not in (1, 2) or b.shape[0] != m:
+        raise ValueError("b must have shape (m,) or (m, k).")
+
+    # Form the smaller symmetric positive definite matrix.
+    # Its dimensions are (m, m), not (n, n).
+    AAT = A @ A.T
+
+    # Solve (A @ A.T) @ y = b using Cholesky.
+    # This is the only linear system solve required.
+    y = solve_chol(AAT, b)
+
+    # Recover the minimum-norm solution:
+    # x = A.T @ y
+    x = A.T @ y
+
+    return x
+
