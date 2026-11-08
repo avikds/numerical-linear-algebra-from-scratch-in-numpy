@@ -404,3 +404,74 @@ def mvn_sample(mu, Sigma, n, rng):
 
     return samples
 
+# Step 8 - gram_schmidt_qr
+def gram_schmidt_qr(A, modified=False):
+    """
+    Perform reduced QR factorization using Gram-Schmidt
+    orthogonalization.
+
+    Parameters:
+        A : Matrix of shape (m, n), where m >= n and
+            columns are linearly independent.
+        modified : If False, use Classical Gram-Schmidt.
+                   If True, use Modified Gram-Schmidt.
+
+    Returns:
+        Q : Matrix with orthonormal columns, shape (m, n).
+        R : Upper triangular matrix with positive diagonal,
+            shape (n, n).
+    """
+    # Convert A to a floating-point array without modifying the original.
+    A = np.asarray(A, dtype=float)
+
+    # Validate the input dimensions.
+    if A.ndim != 2:
+        raise ValueError("A must be a two-dimensional matrix.")
+
+    m, n = A.shape
+
+    if m < n:
+        raise ValueError("A must have at least as many rows as columns.")
+
+    # Initialize Q and R.
+    Q = np.zeros((m, n), dtype=float)
+    R = np.zeros((n, n), dtype=float)
+
+    # Orthogonalize the columns of A one at a time.
+    for j in range(n):
+
+        # Start with the current column.
+        v = A[:, j].copy()
+
+        # Subtract projections onto previously computed
+        # orthonormal columns.
+        for i in range(j):
+
+            if modified:
+                # Modified Gram-Schmidt:
+                # Compute the coefficient using the running residual.
+                R[i, j] = np.dot(Q[:, i], v)
+
+            else:
+                # Classical Gram-Schmidt:
+                # Compute the coefficient using the original column.
+                R[i, j] = np.dot(Q[:, i], A[:, j])
+
+            # Remove the projection from the residual.
+            v -= R[i, j] * Q[:, i]
+
+        # Calculate the norm of the remaining vector.
+        norm_v = np.sqrt(np.dot(v, v))
+
+        # Check for linear dependence or numerical breakdown.
+        if norm_v == 0.0:
+            raise ValueError("Columns of A are linearly dependent.")
+
+        # Store the positive diagonal element of R.
+        R[j, j] = norm_v
+
+        # Normalize the remaining vector to obtain the next Q column.
+        Q[:, j] = v / norm_v
+
+    return Q, R
+
