@@ -295,3 +295,64 @@ def cholesky_factor(A):
 
     return L
 
+# Step 6 - logdet_chol
+def logdet_chol(A):
+    """
+    Compute the log determinant of a symmetric positive
+    definite matrix using Cholesky factorization.
+
+    Parameters:
+        A : Symmetric positive definite matrix of shape (n, n).
+
+    Returns:
+        logdet : Log determinant as a Python float.
+
+    Raises:
+        ValueError: If A is not positive definite.
+    """
+    # Compute the Cholesky factorization: A = L @ L.T.
+    L = cholesky_factor(A)
+
+    # Compute log(det(A)) = 2 * sum(log(diag(L))).
+    logdet = 2.0 * np.sum(np.log(np.diag(L)))
+
+    # Return a Python float.
+    return float(logdet)
+
+
+def solve_chol(A, b):
+    """
+    Solve A @ x = b using Cholesky factorization.
+
+    Parameters:
+        A : Symmetric positive definite matrix of shape (n, n).
+        b : Right-hand side vector of shape (n,)
+            or matrix of shape (n, k).
+
+    Returns:
+        x : Solution with the same shape as b and float dtype.
+
+    Raises:
+        ValueError: If A is not positive definite or b has an
+                    invalid shape.
+    """
+    # Convert the right-hand side to a floating-point array.
+    b = np.asarray(b, dtype=float)
+
+    # Perform Cholesky factorization only once.
+    L = cholesky_factor(A)
+
+    n = L.shape[0]
+
+    # Validate the dimensions of the right-hand side.
+    if b.ndim not in (1, 2) or b.shape[0] != n:
+        raise ValueError("b must have shape (n,) or (n, k).")
+
+    # First solve L @ y = b using forward substitution.
+    y = forward_substitution(L, b)
+
+    # Then solve L.T @ x = y using backward substitution.
+    x = back_substitution(L.T, y)
+
+    return x
+

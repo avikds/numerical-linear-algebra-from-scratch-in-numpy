@@ -15,6 +15,7 @@ python scaffold.py
 - [x] **3.** lu_partial_pivot
 - [x] **4.** solve_lu
 - [x] **5.** cholesky_factor
+- [x] **6.** logdet_chol
 
 ---
 
