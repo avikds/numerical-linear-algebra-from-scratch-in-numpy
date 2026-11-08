@@ -128,3 +128,69 @@ def lu_no_pivot(A):
 
     return L, U
 
+# Step 3 - lu_partial_pivot
+def lu_partial_pivot(A):
+    """
+    Perform LU factorization with partial pivoting.
+
+    The factorization satisfies P @ A = L @ U.
+
+    Parameters:
+        A : Square matrix of shape (n, n).
+
+    Returns:
+        P : Permutation matrix.
+        L : Lower triangular matrix with unit diagonal.
+        U : Upper triangular matrix.
+
+    All returned arrays have float dtype.
+    """
+    # Create a floating-point copy to preserve the original matrix.
+    U = np.array(A, dtype=float, copy=True)
+
+    # Validate that A is square.
+    if U.ndim != 2 or U.shape[0] != U.shape[1]:
+        raise ValueError("A must be a square matrix.")
+
+    n = U.shape[0]
+
+    # Initialize the permutation and lower triangular matrices.
+    P = np.eye(n, dtype=float)
+    L = np.eye(n, dtype=float)
+
+    # Perform Gaussian elimination with partial pivoting.
+    for k in range(n - 1):
+
+        # Find the row containing the largest absolute pivot candidate.
+        # np.argmax returns the first occurrence when values are tied.
+        pivot_row = k + np.argmax(np.abs(U[k:, k]))
+
+        # If the entire remaining column is zero, skip this column.
+        if U[pivot_row, k] == 0.0:
+            continue
+
+        # Swap rows in U and P when necessary.
+        if pivot_row != k:
+            U[[k, pivot_row], :] = U[[pivot_row, k], :]
+            P[[k, pivot_row], :] = P[[pivot_row, k], :]
+
+            # Swap only the previously computed entries of L.
+            L[[k, pivot_row], :k] = L[[pivot_row, k], :k]
+
+        # Eliminate the entries below the pivot.
+        for i in range(k + 1, n):
+
+            # Calculate the elimination multiplier.
+            factor = U[i, k] / U[k, k]
+
+            # Store the multiplier in L.
+            L[i, k] = factor
+
+            # Update the corresponding row of U.
+            U[i, k:] -= factor * U[k, k:]
+
+            # Explicitly eliminate the entry below the pivot.
+            U[i, k] = 0.0
+
+    return P, L, U
+
