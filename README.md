@@ -11,6 +11,7 @@ python scaffold.py
 ## Steps
 
 - [x] **1.** forward_substitution
+- [x] **2.** lu_no_pivot
 
 ---
 

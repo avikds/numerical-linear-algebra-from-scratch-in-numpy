@@ -76,3 +76,55 @@ def back_substitution(U, y):
 
     return x
 
+# Step 2 - lu_no_pivot
+def lu_no_pivot(A):
+    """
+    Perform LU factorization using Gaussian elimination without pivoting.
+
+    Parameters:
+        A : Square matrix of shape (n, n).
+
+    Returns:
+        L : Lower triangular matrix with ones on the diagonal.
+        U : Upper triangular matrix.
+
+    Raises:
+        ValueError: If a zero pivot is encountered before the last
+                    diagonal position.
+    """
+    # Create a floating-point copy so that the original matrix is unchanged.
+    U = np.array(A, dtype=float, copy=True)
+
+    # Validate that A is a square matrix.
+    if U.ndim != 2 or U.shape[0] != U.shape[1]:
+        raise ValueError("A must be a square matrix.")
+
+    n = U.shape[0]
+
+    # Initialize L as an identity matrix.
+    L = np.eye(n, dtype=float)
+
+    # Perform Gaussian elimination without row exchanges.
+    for k in range(n - 1):
+
+        # A zero pivot would cause division by zero.
+        if U[k, k] == 0:
+            raise ValueError("Zero pivot encountered. LU factorization without pivoting is not possible.")
+
+        # Eliminate the entries below the current pivot.
+        for i in range(k + 1, n):
+
+            # Calculate the elimination multiplier.
+            factor = U[i, k] / U[k, k]
+
+            # Store the multiplier in the lower triangular matrix.
+            L[i, k] = factor
+
+            # Update the corresponding row of U.
+            U[i, k:] -= factor * U[k, k:]
+
+            # Explicitly set the eliminated entry to zero.
+            U[i, k] = 0.0
+
+    return L, U
+
