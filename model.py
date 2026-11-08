@@ -1791,3 +1791,69 @@ def woodbury_solve(sigma_diag, X, b):
 
     return x
 
+# Step 26 - rank_one_update
+def rank_one_update(A_inv, logabsdet, u, v):
+    """
+    Update the inverse and log absolute determinant of a matrix
+    after a rank-one modification.
+
+    The updated matrix is:
+        A_new = A + u @ v.T
+
+    Parameters:
+        A_inv    : Inverse of the original matrix, shape (n, n).
+        logabsdet: Log absolute determinant of the original matrix.
+        u        : Update vector, shape (n,).
+        v        : Update vector, shape (n,).
+
+    Returns:
+        new_inv      : Inverse of the updated matrix, shape (n, n).
+        new_logabsdet: Updated log absolute determinant as a Python float.
+
+    Raises:
+        ValueError: If the update makes the matrix singular
+                    (denominator is exactly zero).
+    """
+    # Convert inputs to floating-point arrays without modifying
+    # the original inputs.
+    A_inv = np.asarray(A_inv, dtype=float)
+    u = np.asarray(u, dtype=float)
+    v = np.asarray(v, dtype=float)
+
+    # Validate the dimensions of the inverse.
+    if A_inv.ndim != 2 or A_inv.shape[0] != A_inv.shape[1]:
+        raise ValueError("A_inv must be a square matrix.")
+
+    n = A_inv.shape[0]
+
+    # Validate the update vectors.
+    if u.shape != (n,) or v.shape != (n,):
+        raise ValueError("u and v must both have shape (n,).")
+
+    # Calculate A^(-1) @ u.
+    A_inv_u = A_inv @ u
+
+    # Calculate v.T @ A^(-1).
+    v_A_inv = v @ A_inv
+
+    # Calculate the Sherman-Morrison denominator.
+    denominator = 1.0 + np.dot(v, A_inv_u)
+
+    # The updated matrix is singular if the denominator is zero.
+    if denominator == 0.0:
+        raise ValueError(
+            "Rank-one update makes the matrix singular."
+        )
+
+    # Apply the Sherman-Morrison formula:
+    # (A + u @ v.T)^(-1)
+    # = A^(-1) - (A^(-1) @ u @ v.T @ A^(-1)) / denominator
+    new_inv = A_inv - np.outer(A_inv_u, v_A_inv) / denominator
+
+    # Apply the matrix determinant lemma in logarithmic form.
+    new_logabsdet = float(
+        float(logabsdet) + np.log(abs(denominator))
+    )
+
+    return new_inv, new_logabsdet
+

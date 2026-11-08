@@ -35,6 +35,7 @@ python scaffold.py
 - [x] **23.** spectrum_vs_shuffled
 - [x] **24.** partitioned_inverse
 - [x] **25.** woodbury_solve
+- [x] **26.** rank_one_update
 
 ---
 
