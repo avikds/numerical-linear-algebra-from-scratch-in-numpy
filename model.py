@@ -592,3 +592,53 @@ def householder_qr(A):
 
     return Q, R
 
+# Step 10 - lstsq_normal
+def lstsq_normal(A, b):
+    """
+    Solve an overdetermined least squares problem using
+    the normal equations.
+
+    The normal equations are:
+        (A.T @ A) @ x = A.T @ b
+
+    Parameters:
+        A : Matrix of shape (m, n), where m > n.
+        b : Right-hand side vector of shape (m,)
+            or matrix of shape (m, k).
+
+    Returns:
+        x : Least squares solution with the same shape
+            as b's column dimension, i.e. (n,) or (n, k).
+
+    Raises:
+        ValueError: If the input dimensions are invalid
+                    or the Cholesky factorization fails.
+    """
+    # Convert inputs to floating-point arrays.
+    # This does not modify the original inputs.
+    A = np.asarray(A, dtype=float)
+    b = np.asarray(b, dtype=float)
+
+    # Validate the dimensions of A.
+    if A.ndim != 2:
+        raise ValueError("A must be a two-dimensional matrix.")
+
+    m, n = A.shape
+
+    if m <= n:
+        raise ValueError("A must be overdetermined (m > n).")
+
+    # Validate the dimensions of b.
+    if b.ndim not in (1, 2) or b.shape[0] != m:
+        raise ValueError("b must have shape (m,) or (m, k).")
+
+    # Form the normal equations.
+    AtA = A.T @ A
+    Atb = A.T @ b
+
+    # Solve the normal equations using the Cholesky solver.
+    # Any ValueError from the Cholesky factorization propagates.
+    x = solve_chol(AtA, Atb)
+
+    return x
+

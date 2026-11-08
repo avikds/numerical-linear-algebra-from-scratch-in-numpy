@@ -19,6 +19,7 @@ python scaffold.py
 - [x] **7.** mvn_sample
 - [x] **8.** gram_schmidt_qr
 - [x] **9.** householder_qr
+- [x] **10.** lstsq_normal
 
 ---
 
