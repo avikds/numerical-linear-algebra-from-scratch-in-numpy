@@ -1639,3 +1639,79 @@ def rank_for_energy(s, frac):
 
     return int(K)
 
+# Step 24 - partitioned_inverse
+def partitioned_inverse(M, k):
+    """
+    Compute the inverse of a square matrix using
+    the Schur complement of its lower-right block.
+
+    Parameters:
+        M : Square matrix of shape (n, n).
+        k : Size of the top-left block, where 0 < k < n.
+
+    Returns:
+        M_inv : Full inverse of M, shape (n, n).
+        S     : Schur complement, shape (k, k).
+
+    Notes:
+        - Uses solve_lu() for every linear system solve.
+        - Avoids explicitly calculating H inverse except
+          where required to construct the bottom-right block.
+        - Does not modify the original matrix M.
+    """
+    # Convert M to a floating-point array without modifying the original.
+    M = np.asarray(M, dtype=float)
+
+    # Validate that M is square.
+    if M.ndim != 2 or M.shape[0] != M.shape[1]:
+        raise ValueError("M must be a square matrix.")
+
+    n = M.shape[0]
+
+    # Validate the partition size.
+    if not isinstance(k, (int, np.integer)) or not 0 < k < n:
+        raise ValueError("k must be an integer satisfying 0 < k < n.")
+
+    # Partition M into four blocks.
+    E = M[:k, :k]
+    F = M[:k, k:]
+    G = M[k:, :k]
+    H = M[k:, k:]
+
+    # Calculate H^(-1) @ G using LU-based solving.
+    H_inv_G = solve_lu(H, G)
+
+    # Calculate F @ H^(-1) without explicitly forming H^(-1).
+    # Solve H.T @ Y = F.T, then transpose the result.
+    F_H_inv = solve_lu(H.T, F.T).T
+
+    # Calculate the Schur complement:
+    # S = E - F @ H^(-1) @ G.
+    S = E - F @ H_inv_G
+
+    # Calculate S^(-1) by solving S @ X = I.
+    S_inv = solve_lu(S, np.eye(k, dtype=float))
+
+    # Calculate H^(-1), required for the bottom-right block.
+    H_inv = solve_lu(H, np.eye(n - k, dtype=float))
+
+    # Initialize the full inverse matrix.
+    M_inv = np.zeros((n, n), dtype=float)
+
+    # Top-left block: S^(-1).
+    M_inv[:k, :k] = S_inv
+
+    # Top-right block: -S^(-1) @ F @ H^(-1).
+    M_inv[:k, k:] = -S_inv @ F_H_inv
+
+    # Bottom-left block: -H^(-1) @ G @ S^(-1).
+    M_inv[k:, :k] = -H_inv_G @ S_inv
+
+    # Bottom-right block:
+    # H^(-1) + H^(-1) @ G @ S^(-1) @ F @ H^(-1).
+    M_inv[k:, k:] = (
+        H_inv + H_inv_G @ S_inv @ F_H_inv
+    )
+
+    return M_inv, S
+

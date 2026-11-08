@@ -33,6 +33,7 @@ python scaffold.py
 - [x] **21.** truncated_svd
 - [x] **22.** truncation_error
 - [x] **23.** spectrum_vs_shuffled
+- [x] **24.** partitioned_inverse
 
 ---
 
