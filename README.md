@@ -31,6 +31,7 @@ python scaffold.py
 - [x] **19.** condition_number
 - [x] **20.** least_squares_study
 - [x] **21.** truncated_svd
+- [x] **22.** truncation_error
 
 ---
 

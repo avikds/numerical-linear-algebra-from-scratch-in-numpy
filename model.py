@@ -1491,3 +1491,51 @@ def truncated_svd(A, K):
 
     return A_hat, n_params
 
+# Step 22 - truncation_error
+def truncation_error(s, K):
+    """
+    Calculate the truncation errors of a rank-K SVD approximation.
+
+    Parameters:
+        s : All singular values in decreasing order.
+        K : Number of singular values retained.
+
+    Returns:
+        frobenius : Correct Frobenius norm error.
+        spectral  : Spectral norm error.
+        printed   : Sum of discarded singular values
+                    (the incorrect textbook formula).
+
+        All three results are Python floats.
+    """
+    # Convert singular values to a floating-point array.
+    s = np.asarray(s, dtype=float)
+
+    # Validate the singular value array.
+    if s.ndim != 1:
+        raise ValueError("s must be a one-dimensional array.")
+
+    # Validate K.
+    if not isinstance(K, (int, np.integer)) or not 0 <= K <= len(s):
+        raise ValueError("K must be an integer between 0 and len(s).")
+
+    # Extract the discarded singular values.
+    dropped = s[K:]
+
+    # Correct Frobenius error: square root of the sum
+    # of the squared discarded singular values.
+    frobenius = float(np.sqrt(np.sum(dropped ** 2)))
+
+    # Spectral error: largest discarded singular value.
+    # If no singular values are discarded, the error is zero.
+    if K < len(s):
+        spectral = float(s[K])
+    else:
+        spectral = 0.0
+
+    # Incorrect formula printed in the textbook:
+    # sum of the discarded singular values.
+    printed = float(np.sum(dropped))
+
+    return frobenius, spectral, printed
+
