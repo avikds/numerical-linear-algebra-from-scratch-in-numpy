@@ -239,3 +239,59 @@ def solve_lu(A, b):
 
     return x
 
+# Step 5 - cholesky_factor
+def cholesky_factor(A):
+    """
+    Perform Cholesky factorization of a symmetric positive
+    definite matrix A.
+
+    The factorization satisfies A = L @ L.T.
+
+    Parameters:
+        A : Symmetric positive definite matrix of shape (n, n).
+
+    Returns:
+        L : Lower triangular matrix with strictly positive
+            diagonal entries and zeros above the diagonal.
+
+    Raises:
+        ValueError: If A is not square or a pivot is not
+                    strictly positive.
+    """
+    # Create a floating-point copy to preserve the original matrix.
+    A = np.array(A, dtype=float, copy=True)
+
+    # Validate that A is square.
+    if A.ndim != 2 or A.shape[0] != A.shape[1]:
+        raise ValueError("A must be a square matrix.")
+
+    n = A.shape[0]
+
+    # Initialize L as a zero matrix.
+    L = np.zeros((n, n), dtype=float)
+
+    # Compute the Cholesky factor one column at a time.
+    for j in range(n):
+
+        # Calculate the current diagonal pivot.
+        pivot = A[j, j] - np.dot(L[j, :j], L[j, :j])
+
+        # A valid Cholesky pivot must be strictly positive.
+        if not pivot > 0.0:
+            raise ValueError(
+                "Matrix is not positive definite: "
+                "Cholesky pivot must be strictly positive."
+            )
+
+        # Calculate the diagonal element.
+        L[j, j] = np.sqrt(pivot)
+
+        # Calculate the elements below the diagonal.
+        for i in range(j + 1, n):
+
+            L[i, j] = (
+                A[i, j] - np.dot(L[i, :j], L[j, :j])
+            ) / L[j, j]
+
+    return L
+
