@@ -475,3 +475,120 @@ def gram_schmidt_qr(A, modified=False):
 
     return Q, R
 
+# Step 9 - householder_qr
+def householder_qr(A):
+    """
+    Perform reduced QR factorization using Householder reflections.
+
+    The factorization satisfies A = Q @ R.
+
+    Parameters:
+        A : Matrix of shape (m, n), where m >= n.
+
+    Returns:
+        Q : Matrix of shape (m, n) with orthonormal columns.
+        R : Upper triangular matrix of shape (n, n)
+            with non-negative diagonal entries.
+
+    Raises:
+        ValueError: If A is not a two-dimensional matrix or
+                    if the number of rows is less than columns.
+    """
+    # Convert A to a floating-point copy to preserve the original.
+    A = np.asarray(A, dtype=float)
+
+    # Validate the input dimensions.
+    if A.ndim != 2:
+        raise ValueError("A must be a two-dimensional matrix.")
+
+    m, n = A.shape
+
+    if m < n:
+        raise ValueError("A must have at least as many rows as columns.")
+
+    # Working copy on which Householder reflections are applied.
+    R_work = A.copy()
+
+    # Store the Householder vectors for constructing Q later.
+    reflectors = []
+
+    # Perform one Householder reflection per column.
+    for k in range(n):
+
+        # Extract the part of the current column below and including
+        # the diagonal position.
+        x = R_work[k:, k].copy()
+
+        # Scale the vector to improve numerical stability.
+        scale = np.max(np.abs(x))
+
+        # If the entire remaining column is zero, skip the reflection.
+        # This also handles rank-deficient matrices safely.
+        if scale == 0.0:
+            reflectors.append(None)
+            continue
+
+        x_scaled = x / scale
+
+        # Calculate the norm without using np.linalg.
+        norm_scaled = np.sqrt(np.dot(x_scaled, x_scaled))
+
+        # Choose the sign to avoid cancellation.
+        if x_scaled[0] >= 0.0:
+            alpha_scaled = -norm_scaled
+        else:
+            alpha_scaled = norm_scaled
+
+        # Construct the Householder vector.
+        v = x_scaled.copy()
+        v[0] -= alpha_scaled
+
+        # Normalize the Householder vector.
+        v_norm = np.sqrt(np.dot(v, v))
+
+        if v_norm == 0.0:
+            reflectors.append(None)
+            continue
+
+        v /= v_norm
+
+        # Apply the Householder reflection to the remaining columns:
+        # H = I - 2 * v @ v.T
+        R_work[k:, k:] -= 2.0 * np.outer(
+            v,
+            v @ R_work[k:, k:]
+        )
+
+        # Set the eliminated entries explicitly to zero.
+        R_work[k, k] = alpha_scaled * scale
+        R_work[k + 1:, k] = 0.0
+
+        # Save the reflector for constructing Q.
+        reflectors.append(v)
+
+    # Construct the reduced Q matrix.
+    # Apply the Householder reflections in reverse order.
+    Q = np.eye(m, n, dtype=float)
+
+    for k in range(n - 1, -1, -1):
+
+        v = reflectors[k]
+
+        # Skip columns for which no reflection was necessary.
+        if v is not None:
+            Q[k:, :] -= 2.0 * np.outer(
+                v,
+                v @ Q[k:, :]
+            )
+
+    # Extract the reduced upper triangular R matrix.
+    R = R_work[:n, :].copy()
+
+    # Normalize signs so every diagonal entry of R is non-negative.
+    for j in range(n):
+        if R[j, j] < 0.0:
+            Q[:, j] *= -1.0
+            R[j, :] *= -1.0
+
+    return Q, R
+
