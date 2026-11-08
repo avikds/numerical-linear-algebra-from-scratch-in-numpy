@@ -28,6 +28,7 @@ python scaffold.py
 - [x] **16.** svd_jacobi
 - [x] **17.** pinv_svd
 - [x] **18.** rank_and_null_space
+- [x] **19.** condition_number
 
 ---
 

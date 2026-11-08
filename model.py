@@ -1261,3 +1261,43 @@ def rank_and_null_space(A, rcond=1e-12):
 
     return rank, N
 
+# Step 19 - condition_number
+def condition_number(A):
+    """
+    Calculate the L2 condition number of a matrix
+    using its singular values.
+
+    The condition number is:
+        kappa(A) = sigma_max / sigma_min
+
+    Parameters:
+        A : Input matrix of shape (m, n).
+
+    Returns:
+        Python float representing the condition number.
+        Returns float('inf') if the smallest singular value is zero.
+    """
+    # Convert A to a floating-point array without modifying the original.
+    A = np.asarray(A, dtype=float)
+
+    # Validate the input dimensions.
+    if A.ndim != 2:
+        raise ValueError("A must be a two-dimensional matrix.")
+
+    if min(A.shape) == 0:
+        raise ValueError("A must have at least one row and one column.")
+
+    # Compute the thin SVD using the One-Sided Jacobi algorithm.
+    _, s, _ = svd_jacobi(A)
+
+    # Extract the largest and smallest singular values.
+    sigma_max = s[0]
+    sigma_min = s[-1]
+
+    # A singular matrix has an infinite condition number.
+    if sigma_min == 0.0:
+        return float('inf')
+
+    # Calculate and return the condition number as a Python float.
+    return float(sigma_max / sigma_min)
+
