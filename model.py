@@ -823,3 +823,74 @@ def top_k_deflation(A, k, n_iter, seed=0):
 
     return vals, vecs
 
+# Step 14 - orthogonal_iteration
+def orthogonal_iteration(A, k, n_iter, seed=0):
+    """
+    Find the top k eigenpairs of a real symmetric matrix
+    using orthogonal iteration (block power method).
+
+    Parameters:
+        A      : Real symmetric matrix of shape (n, n).
+        k      : Number of eigenpairs to estimate.
+        n_iter : Number of orthogonal iterations.
+        seed   : Random seed for reproducibility (default=0).
+
+    Returns:
+        vals : Rayleigh quotient estimates of shape (k,),
+               sorted by decreasing absolute value.
+        vecs : Orthonormal eigenvector estimates of shape (n, k),
+               with eigenvectors stored as columns.
+
+    Raises:
+        ValueError: If A is not square, k is invalid,
+                    or n_iter is invalid.
+    """
+    # Convert A to a floating-point array without modifying
+    # the original matrix.
+    A = np.asarray(A, dtype=float)
+
+    # Validate that A is square.
+    if A.ndim != 2 or A.shape[0] != A.shape[1]:
+        raise ValueError("A must be a square matrix.")
+
+    n = A.shape[0]
+
+    # Validate k.
+    if not isinstance(k, (int, np.integer)) or not 0 <= k <= n:
+        raise ValueError("k must be an integer between 0 and n.")
+
+    # Validate the number of iterations.
+    if not isinstance(n_iter, (int, np.integer)) or n_iter < 0:
+        raise ValueError("n_iter must be a non-negative integer.")
+
+    # Create a reproducible random number generator.
+    rng = np.random.default_rng(seed)
+
+    # Generate a random starting matrix of shape (n, k).
+    V = rng.standard_normal(size=(n, k))
+
+    # Orthonormalize the initial columns using Householder QR.
+    V, _ = householder_qr(V)
+
+    # Perform exactly n_iter orthogonal iterations.
+    for _ in range(n_iter):
+
+        # Multiply the current orthonormal block by A.
+        Z = A @ V
+
+        # Re-orthonormalize the columns using Householder QR.
+        V, _ = householder_qr(Z)
+
+    # Calculate the Rayleigh quotient for each final column.
+    AV = A @ V
+    vals = np.sum(V * AV, axis=0)
+
+    # Sort eigenvalue estimates by decreasing absolute value.
+    order = np.argsort(-np.abs(vals), kind="stable")
+
+    # Rearrange eigenvalues and their corresponding eigenvectors.
+    vals = vals[order]
+    vecs = V[:, order]
+
+    return vals, vecs
+

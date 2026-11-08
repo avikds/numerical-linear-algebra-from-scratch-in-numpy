@@ -23,6 +23,7 @@ python scaffold.py
 - [x] **11.** lstsq_qr
 - [x] **12.** power_method
 - [x] **13.** top_k_deflation
+- [x] **14.** orthogonal_iteration
 
 ---
 
